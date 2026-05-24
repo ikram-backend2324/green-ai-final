@@ -1,0 +1,38 @@
+{% extends "auth_base.html" %}
+{% block title %}Register{% endblock %}
+{% block auth_content %}
+<h2 class="auth-title" data-i18n="Create Account">Create Account</h2>
+<p class="auth-subtitle" data-i18n="Join GreenAI and start optimizing">Join GreenAI and start optimizing</p>
+<form method="post" action="{% url 'users:register' %}" class="auth-form">
+    {% csrf_token %}
+    <div class="form-group">
+        <label class="form-label"><i class="fas fa-user"></i> <span data-i18n="Username">Username</span></label>
+        <input type="text" name="username" class="form-input" placeholder="Choose a username" required autofocus>
+    </div>
+    <div class="form-group">
+        <label class="form-label"><i class="fas fa-envelope"></i> <span data-i18n="Email">Email</span></label>
+        <input type="email" name="email" class="form-input" placeholder="your@email.com" required>
+    </div>
+    <div class="form-group">
+        <label class="form-label"><i class="fas fa-building"></i> <span data-i18n="Company">Company</span> <span class="optional">(optional)</span></label>
+        <input type="text" name="company" class="form-input" placeholder="Your company name">
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label"><i class="fas fa-lock"></i> <span data-i18n="Password">Password</span></label>
+            <input type="password" name="password1" class="form-input" placeholder="Min. 8 characters" required minlength="8">
+        </div>
+        <div class="form-group">
+            <label class="form-label"><i class="fas fa-lock"></i> <span data-i18n="Confirm">Confirm</span></label>
+            <input type="password" name="password2" class="form-input" placeholder="Repeat password" required>
+        </div>
+    </div>
+    <button type="submit" class="btn-auth">
+        <i class="fas fa-user-plus"></i> <span data-i18n="Create Account">Create Account</span>
+    </button>
+</form>
+<div class="auth-divider"><span data-i18n="Already have an account?">Already have an account?</span></div>
+<a href="{% url 'users:login' %}" class="btn-auth-secondary">
+    <i class="fas fa-sign-in-alt"></i> <span data-i18n="Sign In">Sign In</span>
+</a>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}{{ source.name }}{% endblock %}
+{% block page_title %}{{ source.name }}{% endblock %}
+
+{% if source.latitude and source.longitude %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+{% endif %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{% url 'energy:source_list' %}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> <span data-i18n="Back">Back</span>
+    </a>
+    <div class="page-header-actions">
+        <a href="{% url 'energy:reading_create' source.pk %}" class="btn btn-outline">
+            <i class="fas fa-plus"></i> <span data-i18n="Add Reading">Add Reading</span>
+        </a>
+        <a href="{% url 'optimization:run' source.pk %}" class="btn btn-primary">
+            <i class="fas fa-brain"></i> <span data-i18n="Run AI Optimization">Run AI Optimization</span>
+        </a>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Source Information</h3>
+            <span class="status-badge status-{{ source.status }}">{{ source.get_status_display }}</span>
+        </div>
+        <div class="card-body">
+            <div class="detail-info-grid">
+                <div class="detail-info-item">
+                    <label>Type</label>
+                    <span class="type-badge type-{{ source.source_type }}">{{ source.get_source_type_display }}</span>
+                </div>
+                <div class="detail-info-item">
+                    <label>Capacity</label>
+                    <span><strong>{{ source.capacity_kw }}</strong> kW</span>
+                </div>
+                <div class="detail-info-item">
+                    <label>Location</label>
+                    <span>{{ source.location }}</span>
+                </div>
+                {% if source.latitude and source.longitude %}
+                <div class="detail-info-item full-width">
+                    <label><i class="fas fa-map-marker-alt"></i> Map</label>
+                    <div id="source-map" style="height:220px; border-radius:8px; margin-top:6px;"></div>
+                </div>
+                {% endif %}
+                <div class="detail-info-item">
+                    <label>Installed</label>
+                    <span>{{ source.installation_date|date:"F d, Y" }}</span>
+                </div>
+                <div class="detail-info-item">
+                    <label>Owner</label>
+                    <span>{{ source.owner.username }}</span>
+                </div>
+                {% if source.description %}
+                <div class="detail-info-item full-width">
+                    <label>Description</label>
+                    <span>{{ source.description }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Quick Stats</h3>
+        </div>
+        <div class="card-body">
+            <div class="stats-list">
+                <div class="stat-row">
+                    <span class="stat-label"><i class="fas fa-chart-bar"></i> Total Readings</span>
+                    <span class="stat-value">{{ readings|length }}</span>
+                </div>
+                {% if readings %}
+                <div class="stat-row">
+                    <span class="stat-label"><i class="fas fa-bolt"></i> Latest Output</span>
+                    <span class="stat-value">{{ readings.0.output_kwh }} kWh</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label"><i class="fas fa-leaf"></i> Latest CO₂ Saved</span>
+                    <span class="stat-value">{{ readings.0.co2_saved_kg|floatformat:2 }} kg</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label"><i class="fas fa-clock"></i> Last Reading</span>
+                    <span class="stat-value">{{ readings.0.timestamp|date:"M d, H:i" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-list"></i> Energy Readings</h3>
+        <a href="{% url 'energy:reading_create' source.pk %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus"></i> <span data-i18n="Add Reading">Add Reading</span>
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if readings %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="Timestamp">Timestamp</th>
+                        <th data-i18n="Output (kWh)">Output (kWh)</th>
+                        <th data-i18n="Efficiency">Efficiency</th>
+                        <th>CO₂ Saved</th>
+                        <th>Temperature</th>
+                        <th>Wind Speed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reading in readings %}
+                    <tr>
+                        <td>{{ reading.timestamp|date:"M d, Y H:i" }}</td>
+                        <td><strong>{{ reading.output_kwh }}</strong></td>
+                        <td>
+                            <div class="progress-bar-wrap">
+                                <div class="progress-bar" style="width: {{ reading.efficiency_percent }}%"></div>
+                                <span>{{ reading.efficiency_percent }}%</span>
+                            </div>
+                        </td>
+                        <td>{{ reading.co2_saved_kg|floatformat:2 }} kg</td>
+                        <td>{% if reading.temperature_c %}{{ reading.temperature_c }}°C{% else %}—{% endif %}</td>
+                        <td>{% if reading.wind_speed_ms %}{{ reading.wind_speed_ms }} m/s{% else %}—{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-chart-line"></i>
+            <p data-i18n="No readings recorded yet.">No readings recorded yet.</p>
+            <a href="{% url 'energy:reading_create' source.pk %}" class="btn btn-primary" data-i18n="Add Reading">Add Reading</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if source.latitude and source.longitude %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function() {
+    var lat = {{ source.latitude }};
+    var lng = {{ source.longitude }};
+    var map = L.map('source-map', { zoomControl: true, scrollWheelZoom: false }).setView([lat, lng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap', maxZoom: 19
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map)
+        .bindPopup('<strong>{{ source.name|escapejs }}</strong><br>{{ source.location|escapejs }}')
+        .openPopup();
+})();
+</script>
+{% endif %}
+{% endblock %}

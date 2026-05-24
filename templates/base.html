@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GreenAI{% endblock %} — GreenAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-icon"><i class="fas fa-leaf"></i></div>
+        <span class="brand-text">GreenAI</span>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a href="{% url 'dashboard:index' %}" class="nav-item {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+            <i class="fas fa-th-large"></i>
+            <span data-i18n="Dashboard">Dashboard</span>
+        </a>
+        <a href="{% url 'energy:source_list' %}" class="nav-item {% if request.resolver_match.app_name == 'energy' %}active{% endif %}">
+            <i class="fas fa-bolt"></i>
+            <span data-i18n="Energy Sources">Energy Sources</span>
+        </a>
+        <a href="{% url 'optimization:list' %}" class="nav-item {% if request.resolver_match.app_name == 'optimization' %}active{% endif %}">
+            <i class="fas fa-brain"></i>
+            <span data-i18n="AI Optimization">AI Optimization</span>
+        </a>
+        <a href="{% url 'analytics:dashboard' %}" class="nav-item {% if request.resolver_match.app_name == 'analytics' %}active{% endif %}">
+            <i class="fas fa-chart-bar"></i>
+            <span data-i18n="Analytics">Analytics</span>
+        </a>
+        {% if user.is_staff %}
+        <div class="nav-section-label">Admin</div>
+        <a href="/admin/" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span data-i18n="Admin Panel">Admin Panel</span>
+        </a>
+        {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+        <!-- Language Switcher -->
+        <div class="lang-switcher">
+            <button class="lang-btn" id="langToggle" onclick="toggleLangMenu()">
+                <i class="fas fa-globe"></i>
+                <span id="currentLang">EN</span>
+                <i class="fas fa-chevron-up" id="langChevron"></i>
+            </button>
+            <div class="lang-menu" id="langMenu">
+                <button class="lang-option" data-lang="en" onclick="setLang('en');toggleLangMenu()">
+                    <span class="lang-flag">🇬🇧</span> English
+                </button>
+                <button class="lang-option" data-lang="ru" onclick="setLang('ru');toggleLangMenu()">
+                    <span class="lang-flag">🇷🇺</span> Русский
+                </button>
+                <button class="lang-option" data-lang="uz" onclick="setLang('uz');toggleLangMenu()">
+                    <span class="lang-flag">🇺🇿</span> O'zbek
+                </button>
+            </div>
+        </div>
+
+        <div class="user-info">
+            <div class="user-avatar">{{ user.username|first|upper }}</div>
+            <div class="user-details">
+                <div class="user-name">{{ user.username }}</div>
+                <div class="user-role" data-i18n="{% if user.is_staff %}Admin{% else %}User{% endif %}">
+                    {% if user.is_staff %}Admin{% else %}User{% endif %}
+                </div>
+            </div>
+        </div>
+        <a href="{% url 'users:logout' %}" class="logout-btn" title="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+        </a>
+    </div>
+</aside>
+
+<div class="main-wrapper">
+    <header class="topbar">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+        <div class="topbar-actions">
+            <div class="topbar-date">
+                <i class="fas fa-calendar-alt"></i>
+                <span id="currentDate"></span>
+            </div>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible">
+            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+            {{ message }}
+            <button class="alert-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+{% load static %}
+<script src="{% static 'js/lang.js' %}"></script>
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

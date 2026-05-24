@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}AI Optimization{% endblock %}
+{% block page_title %}<span data-i18n="AI Optimization">AI Optimization</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="page-subtitle">Run AI-powered optimization on your energy sources.</p>
+    <a href="{% url 'energy:source_list' %}" class="btn btn-primary">
+        <i class="fas fa-bolt"></i> <span data-i18n="Energy Sources">Energy Sources</span>
+    </a>
+</div>
+
+{% if results %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-history"></i> Optimization History</h3>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="Source">Source</th>
+                        <th>Status</th>
+                        <th data-i18n="Efficiency">Efficiency Score</th>
+                        <th>Predicted Output</th>
+                        <th>CO₂ Saved</th>
+                        <th>Confidence</th>
+                        <th data-i18n="Timestamp">Date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td>
+                            <span class="type-badge type-{{ result.source.source_type }}">{{ result.source.get_source_type_display }}</span>
+                            {{ result.source.name }}
+                        </td>
+                        <td><span class="status-badge status-{{ result.status }}">{{ result.get_status_display }}</span></td>
+                        <td>
+                            {% if result.efficiency_score %}
+                            <div class="progress-bar-wrap">
+                                <div class="progress-bar {% if result.efficiency_score > 75 %}progress-good{% elif result.efficiency_score > 50 %}progress-mid{% else %}progress-low{% endif %}" style="width: {{ result.efficiency_score }}%"></div>
+                                <span>{{ result.efficiency_score|floatformat:1 }}%</span>
+                            </div>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>{% if result.predicted_output_kwh %}{{ result.predicted_output_kwh }} kWh{% else %}—{% endif %}</td>
+                        <td>{% if result.co2_saved_kg %}{{ result.co2_saved_kg|floatformat:1 }} kg{% else %}—{% endif %}</td>
+                        <td>{% if result.confidence %}<span class="confidence-badge">{{ result.confidence|floatformat:2 }}</span>{% else %}—{% endif %}</td>
+                        <td>{{ result.created_at|date:"M d, H:i" }}</td>
+                        <td><a href="{% url 'optimization:result_detail' result.pk %}" class="btn btn-xs btn-outline">View</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state large">
+        <i class="fas fa-brain"></i>
+        <h3 data-i18n="No optimizations run yet.">No optimizations run yet.</h3>
+        <p>Go to your energy sources and click Optimize on any source.</p>
+        <a href="{% url 'energy:source_list' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-bolt"></i> <span data-i18n="Energy Sources">View Energy Sources</span>
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

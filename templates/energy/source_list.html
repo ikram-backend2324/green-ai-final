@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Energy Sources{% endblock %}
+{% block page_title %}<span data-i18n="Energy Sources">Energy Sources</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-stats">
+        <span><i class="fas fa-plug"></i> {{ sources.count }} sources</span>
+        <span><i class="fas fa-bolt"></i> {{ total_capacity }} kW capacity</span>
+        <span><i class="fas fa-check-circle"></i> {{ active_count }} active</span>
+    </div>
+    <a href="{% url 'energy:source_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> <span data-i18n="Add Energy Source">Add Energy Source</span>
+    </a>
+</div>
+
+{% if sources %}
+<div class="sources-grid">
+    {% for source in sources %}
+    <div class="source-card">
+        <div class="source-card-header source-type-{{ source.source_type }}">
+            <div class="source-type-icon">
+                {% if source.source_type == 'solar' %}<i class="fas fa-sun"></i>
+                {% elif source.source_type == 'wind' %}<i class="fas fa-wind"></i>
+                {% elif source.source_type == 'hydro' %}<i class="fas fa-water"></i>
+                {% elif source.source_type == 'biomass' %}<i class="fas fa-seedling"></i>
+                {% else %}<i class="fas fa-fire"></i>{% endif %}
+            </div>
+            <span class="status-badge status-{{ source.status }}">{{ source.get_status_display }}</span>
+        </div>
+        <div class="source-card-body">
+            <h3 class="source-card-name">{{ source.name }}</h3>
+            <p class="source-card-type">{{ source.get_source_type_display }}</p>
+            <div class="source-card-stats">
+                <div class="stat-item"><i class="fas fa-bolt"></i> <span>{{ source.capacity_kw }} kW</span></div>
+                <div class="stat-item"><i class="fas fa-map-marker-alt"></i> <span>{{ source.location }}</span></div>
+                <div class="stat-item"><i class="fas fa-calendar"></i> <span>{{ source.installation_date|date:"M Y" }}</span></div>
+            </div>
+        </div>
+        <div class="source-card-actions">
+            <a href="{% url 'optimization:run' source.pk %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-brain"></i> <span data-i18n="Optimize">Optimize</span>
+            </a>
+            <a href="{% url 'energy:source_detail' source.pk %}" class="btn btn-sm btn-outline">
+                <i class="fas fa-eye"></i> <span data-i18n="Details">Details</span>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state large">
+        <i class="fas fa-solar-panel"></i>
+        <h3 data-i18n="No energy sources yet.">No energy sources yet.</h3>
+        <a href="{% url 'energy:source_create' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus"></i> <span data-i18n="Add Energy Source">Add Energy Source</span>
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

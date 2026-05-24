@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}<span data-i18n="Analytics">Analytics</span>{% endblock %}
+
+{% block content %}
+<div class="kpi-grid">
+    <div class="kpi-card kpi-green">
+        <div class="kpi-icon"><i class="fas fa-bolt"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value">{{ total_output }} <span class="kpi-unit">kWh</span></div>
+            <div class="kpi-label" data-i18n="Total Output">Total Output</div>
+        </div>
+    </div>
+    <div class="kpi-card kpi-teal">
+        <div class="kpi-icon"><i class="fas fa-leaf"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value">{{ total_co2 }} <span class="kpi-unit">kg</span></div>
+            <div class="kpi-label" data-i18n="CO₂ Saved">CO₂ Offset</div>
+        </div>
+    </div>
+    <div class="kpi-card kpi-blue">
+        <div class="kpi-icon"><i class="fas fa-tachometer-alt"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value">{{ avg_efficiency }}<span class="kpi-unit">%</span></div>
+            <div class="kpi-label" data-i18n="Avg Efficiency">Avg Efficiency</div>
+        </div>
+    </div>
+    <div class="kpi-card kpi-emerald">
+        <div class="kpi-icon"><i class="fas fa-brain"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value">{{ optimization_count }}</div>
+            <div class="kpi-label" data-i18n="Optimizations Run">Optimizations Run</div>
+        </div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-chart-line"></i> <span data-i18n="Output Trend">Output Trend</span></h3>
+        </div>
+        <div class="card-body">
+            <canvas id="trendChart" height="200"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-chart-pie"></i> <span data-i18n="Output by Source Type">Output by Source Type</span></h3>
+        </div>
+        <div class="card-body">
+            <canvas id="typeChart" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-table"></i> Recent Readings</h3>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_readings %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="Source">Source</th>
+                        <th data-i18n="Timestamp">Timestamp</th>
+                        <th data-i18n="Output (kWh)">Output</th>
+                        <th data-i18n="Efficiency">Efficiency</th>
+                        <th>CO₂ Saved</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in recent_readings %}
+                    <tr>
+                        <td>{{ r.source.name }}</td>
+                        <td>{{ r.timestamp|date:"M d, Y H:i" }}</td>
+                        <td><strong>{{ r.output_kwh }} kWh</strong></td>
+                        <td>{{ r.efficiency_percent }}%</td>
+                        <td>{{ r.co2_saved_kg|floatformat:2 }} kg</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-chart-bar"></i>
+            <p>No data available yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const trendLabels = {{ trend_labels|safe }};
+const trendValues = {{ trend_values|safe }};
+const typeLabels = {{ type_labels|safe }};
+const typeValues = {{ type_values|safe }};
+
+if (trendLabels.length > 0) {
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: trendLabels,
+            datasets: [{
+                label: 'Output (kWh)',
+                data: trendValues,
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34,197,94,0.1)',
+                fill: true, tension: 0.4,
+                pointBackgroundColor: '#22c55e', pointRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter' } } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 6 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+        }
+    });
+} else {
+    document.getElementById('trendChart').parentElement.innerHTML = '<div class="empty-state"><i class="fas fa-chart-line"></i><p>No trend data yet.</p></div>';
+}
+
+if (typeLabels.length > 0) {
+    new Chart(document.getElementById('typeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: typeLabels,
+            datasets: [{
+                data: typeValues,
+                backgroundColor: ['#22c55e','#3b82f6','#14b8a6','#8b5cf6','#f59e0b'],
+                borderColor: '#1e293b', borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '65%',
+            plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter' } } } }
+        }
+    });
+} else {
+    document.getElementById('typeChart').parentElement.innerHTML = '<div class="empty-state"><i class="fas fa-chart-pie"></i><p>No type data yet.</p></div>';
+}
+</script>
+{% endblock %}

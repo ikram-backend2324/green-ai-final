@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Optimization Result{% endblock %}
+{% block page_title %}<span data-i18n="AI Optimization">AI Optimization Result</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{% url 'optimization:list' %}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> <span data-i18n="Back">Back</span>
+    </a>
+    <a href="{% url 'optimization:run' result.source.pk %}" class="btn btn-primary">
+        <i class="fas fa-redo"></i> Re-run Optimization
+    </a>
+</div>
+
+<div class="result-header card">
+    <div class="result-header-content">
+        <div class="result-source-info">
+            <span class="type-badge type-{{ result.source.source_type }} large">{{ result.source.get_source_type_display }}</span>
+            <div>
+                <h2>{{ result.source.name }}</h2>
+                <p>{{ result.source.location }} · {{ result.source.capacity_kw }} kW capacity</p>
+            </div>
+        </div>
+        <div class="result-meta">
+            <span class="status-badge status-{{ result.status }}">{{ result.get_status_display }}</span>
+            <span class="result-date">{{ result.created_at|date:"F d, Y H:i" }}</span>
+        </div>
+    </div>
+</div>
+
+{% if result.status == 'completed' %}
+<div class="result-kpis">
+    <div class="result-kpi">
+        <div class="result-kpi-icon green"><i class="fas fa-tachometer-alt"></i></div>
+        <div class="result-kpi-value">{{ result.efficiency_score|floatformat:1 }}<span>%</span></div>
+        <div class="result-kpi-label" data-i18n="Avg Efficiency">Efficiency Score</div>
+    </div>
+    <div class="result-kpi">
+        <div class="result-kpi-icon blue"><i class="fas fa-bolt"></i></div>
+        <div class="result-kpi-value">{{ result.predicted_output_kwh }}<span>kWh</span></div>
+        <div class="result-kpi-label">Predicted Output</div>
+    </div>
+    <div class="result-kpi">
+        <div class="result-kpi-icon teal"><i class="fas fa-leaf"></i></div>
+        <div class="result-kpi-value">{{ result.co2_saved_kg|floatformat:1 }}<span>kg</span></div>
+        <div class="result-kpi-label" data-i18n="CO₂ Saved">CO₂ Offset</div>
+    </div>
+    <div class="result-kpi">
+        <div class="result-kpi-icon emerald"><i class="fas fa-check-circle"></i></div>
+        <div class="result-kpi-value">{{ result.confidence|floatformat:2 }}</div>
+        <div class="result-kpi-label">Confidence</div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-lightbulb"></i> <span data-i18n="AI Recommendation">AI Recommendation</span></h3>
+    </div>
+    <div class="card-body">
+        <div class="recommendation-text">{{ result.recommendation }}</div>
+    </div>
+</div>
+
+{% if result.suggested_actions %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-tasks"></i> <span data-i18n="Suggested Actions">Suggested Actions</span></h3>
+    </div>
+    <div class="card-body">
+        <ul class="actions-list">
+            {% for action in result.suggested_actions %}
+            <li class="action-item">
+                <div class="action-icon"><i class="fas fa-arrow-right"></i></div>
+                <div class="action-text">{{ action }}</div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{% if result.raw_data %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-code"></i> <span data-i18n="Raw AI Response">Raw AI Response</span></h3>
+        <button class="btn btn-sm btn-outline" onclick="document.getElementById('rawData').style.display = document.getElementById('rawData').style.display === 'none' ? 'block' : 'none'">Toggle JSON</button>
+    </div>
+    <div class="card-body" id="rawData" style="display:none;">
+        <pre class="json-display">{{ result.raw_data }}</pre>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="card mt-4">
+    <div class="empty-state">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Optimization {{ result.status }}{% if result.recommendation %}: {{ result.recommendation }}{% endif %}</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Add Reading{% endblock %}
+{% block page_title %}<span data-i18n="Add Reading">Add Reading</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{% url 'energy:source_detail' source.pk %}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> <span data-i18n="Back">Back</span>
+    </a>
+</div>
+<div class="form-card">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-chart-line"></i> New Reading for {{ source.name }}</h3>
+            <span class="type-badge type-{{ source.source_type }}">{{ source.get_source_type_display }}</span>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="Timestamp">Timestamp *</label>
+                        <input type="datetime-local" name="timestamp" class="form-input" value="{{ now }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="Output (kWh)">Output (kWh) *</label>
+                        <input type="number" name="output_kwh" class="form-input" placeholder="Energy output" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="Efficiency">Efficiency (%)</label>
+                        <input type="number" name="efficiency_percent" class="form-input" placeholder="0–100" step="0.1" min="0" max="100" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Temperature (°C)</label>
+                        <input type="number" name="temperature_c" class="form-input" placeholder="Optional" step="0.1">
+                    </div>
+                    {% if source.source_type == 'wind' %}
+                    <div class="form-group">
+                        <label class="form-label">Wind Speed (m/s)</label>
+                        <input type="number" name="wind_speed_ms" class="form-input" placeholder="Optional" step="0.1" min="0">
+                    </div>
+                    {% endif %}
+                    {% if source.source_type == 'solar' %}
+                    <div class="form-group">
+                        <label class="form-label">Solar Irradiance (W/m²)</label>
+                        <input type="number" name="solar_irradiance" class="form-input" placeholder="Optional" step="0.1" min="0">
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="form-actions">
+                    <a href="{% url 'energy:source_detail' source.pk %}" class="btn btn-outline" data-i18n="Cancel">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> <span data-i18n="Save Reading">Save Reading</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

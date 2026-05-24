@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}Add Energy Source{% endblock %}
+{% block page_title %}<span data-i18n="Add Energy Source">Add Energy Source</span>{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  #map-picker {
+    height: 340px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    cursor: crosshair;
+    z-index: 0;
+  }
+  #map-search-wrap {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  #map-search-input {
+    flex: 1;
+  }
+  .map-location-display {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted, #64748b);
+    min-height: 18px;
+  }
+  .map-location-display span {
+    font-weight: 500;
+    color: var(--text-primary, #1e293b);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{% url 'energy:source_list' %}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> <span data-i18n="Back">Back</span>
+    </a>
+</div>
+<div class="form-card">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-solar-panel"></i>
+                <span data-i18n="New Energy Source">New Energy Source</span>
+            </h3>
+        </div>
+        <div class="card-body">
+            <form method="post" id="sourceForm">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label"><span data-i18n="Source Name">Source Name</span> *</label>
+                        <input type="text" name="name" class="form-input" placeholder="e.g. Solar Farm A" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span data-i18n="Source Type">Source Type</span> *</label>
+                        <select name="source_type" class="form-input" required>
+                            <option value="">— Select Type —</option>
+                            {% for value, label in source_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span data-i18n="Capacity (kW)">Capacity (kW)</span> *</label>
+                        <input type="number" name="capacity_kw" class="form-input" placeholder="e.g. 500" step="0.1" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span data-i18n="Status">Status</span> *</label>
+                        <select name="status" class="form-input">
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if value == 'active' %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Hidden fields submitted with form -->
+                    <input type="hidden" name="location" id="locationInput">
+                    <input type="hidden" name="latitude" id="latInput">
+                    <input type="hidden" name="longitude" id="lngInput">
+
+                    <!-- Map picker spans full width -->
+                    <div class="form-group full-width">
+                        <label class="form-label">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span data-i18n="Location">Location</span> *
+                            <small style="font-weight:400; color: var(--text-muted, #64748b);">— click on the map or search</small>
+                        </label>
+                        <div id="map-search-wrap">
+                            <input type="text" id="map-search-input" class="form-input" placeholder="Search for a place..." autocomplete="off">
+                            <button type="button" class="btn btn-outline" id="map-search-btn">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                        <div id="map-picker"></div>
+                        <div class="map-location-display" id="locationDisplay">
+                            <i class="fas fa-info-circle"></i> Click on the map to set your location.
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><span data-i18n="Installation Date">Installation Date</span> *</label>
+                        <input type="date" name="installation_date" class="form-input" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label"><span data-i18n="Description">Description</span></label>
+                        <textarea name="description" class="form-input" rows="3" placeholder="Optional description..."></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <a href="{% url 'energy:source_list' %}" class="btn btn-outline">
+                        <span data-i18n="Cancel">Cancel</span>
+                    </a>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-save"></i> <span data-i18n="Create Source">Create Source</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+    var map = L.map('map-picker').setView([41.2995, 69.2401], 6); // default: Tashkent area
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+    }).addTo(map);
+
+    var marker = null;
+
+    function setLocation(lat, lng, label) {
+        lat = parseFloat(lat.toFixed(6));
+        lng = parseFloat(lng.toFixed(6));
+
+        if (marker) {
+            marker.setLatLng([lat, lng]);
+        } else {
+            marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+            marker.on('dragend', function (e) {
+                var pos = e.target.getLatLng();
+                reverseGeocode(pos.lat, pos.lng);
+            });
+        }
+
+        document.getElementById('latInput').value = lat;
+        document.getElementById('lngInput').value = lng;
+
+        if (label) {
+            document.getElementById('locationInput').value = label;
+            document.getElementById('locationDisplay').innerHTML =
+                '<i class="fas fa-map-marker-alt" style="color:#16a34a"></i> <span>' + label + '</span> (' + lat + ', ' + lng + ')';
+        } else {
+            document.getElementById('locationInput').value = lat + ', ' + lng;
+            document.getElementById('locationDisplay').innerHTML =
+                '<i class="fas fa-map-marker-alt" style="color:#16a34a"></i> <span>' + lat + ', ' + lng + '</span>';
+        }
+    }
+
+    function reverseGeocode(lat, lng) {
+        var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var label = data.display_name
+                    ? data.display_name.split(',').slice(0, 3).join(',').trim()
+                    : (lat.toFixed(4) + ', ' + lng.toFixed(4));
+                setLocation(lat, lng, label);
+            })
+            .catch(function () {
+                setLocation(lat, lng, null);
+            });
+    }
+
+    map.on('click', function (e) {
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+        map.setView(e.latlng, Math.max(map.getZoom(), 13));
+    });
+
+    // Search via Nominatim
+    function doSearch() {
+        var q = document.getElementById('map-search-input').value.trim();
+        if (!q) return;
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1';
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+            .then(function (r) { return r.json(); })
+            .then(function (results) {
+                if (results && results.length > 0) {
+                    var r = results[0];
+                    var label = r.display_name.split(',').slice(0, 3).join(',').trim();
+                    map.setView([parseFloat(r.lat), parseFloat(r.lon)], 14);
+                    setLocation(parseFloat(r.lat), parseFloat(r.lon), label);
+                } else {
+                    alert('Location not found. Try a different search.');
+                }
+            })
+            .catch(function () { alert('Search failed. Please try clicking on the map.'); });
+    }
+
+    document.getElementById('map-search-btn').addEventListener('click', doSearch);
+    document.getElementById('map-search-input').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+    });
+
+    // Validate location before submit
+    document.getElementById('sourceForm').addEventListener('submit', function (e) {
+        if (!document.getElementById('latInput').value) {
+            e.preventDefault();
+            alert('Please select a location on the map before submitting.');
+            document.getElementById('map-picker').scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+
+    // Try to geolocate user on load for convenience
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (pos) {
+            map.setView([pos.coords.latitude, pos.coords.longitude], 10);
+        }, function () {});
+    }
+})();
+</script>
+{% endblock %}
